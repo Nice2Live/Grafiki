@@ -12,7 +12,7 @@ folder_path = "C:/Users/Admin/Desktop/Server_TEST/LOG"
 # === 2. Поиск последнего .txt файла ===
 txt_files = [f for f in os.listdir(folder_path) if f.endswith(".txt")]
 if not txt_files:
-    raise FileNotFoundError("❌ В папке нет .txt файлов")
+    raise FileNotFoundError("В папке нет .txt файлов")
 
 latest_file = max(txt_files, key=lambda f: os.path.getmtime(os.path.join(folder_path, f)))
 latest_path = os.path.join(folder_path, latest_file)
@@ -27,7 +27,7 @@ try:
     if not isinstance(DATA, dict):
         raise ValueError("Ожидался dict в корне файла.")
 except Exception as e:
-    raise ValueError(f"❌ Не удалось преобразовать текст в словарь: {e}")
+    raise ValueError(f"Не удалось преобразовать текст в словарь: {e}")
 
 # === 4. Разбор JSON внутри DATA ===
 all_subjects = []
@@ -37,9 +37,9 @@ for key, value in DATA.items():
         if isinstance(subjects, list):
             all_subjects.extend(subjects)
         else:
-            print(f"⚠ Блок {key} не список, пропускаем.")
+            print(f"Блок {key} не список, пропускаем.")
     except Exception as e:
-        print(f"⚠ Ошибка при загрузке блока {key}: {e}")
+        print(f"Ошибка при загрузке блока {key}: {e}")
 
 # === 5. Преобразуем данные ===
 rows = []
@@ -63,7 +63,7 @@ for subj in all_subjects:
         "marks": marks
     })
 if not rows:
-    raise ValueError("❌ Не удалось извлечь ни одного предмета. Проверь структуру JSON внутри DATA.")
+    raise ValueError("Не удалось извлечь ни одного предмета")
 
 df = pd.DataFrame(rows)
 
@@ -81,54 +81,29 @@ df = df.groupby('subject').agg({
 }).reset_index()
 
 
-
-
-
 # Убираем указанные предметы
 df = df[~df['subject'].isin(['Индивидуальный проект', 'Иностранный язык'])]
 
-# === Объединение предметов в категорию 'Физика' перед выводом второго графика ===
-to_merge = ['Технологии современного производства', 'Инженерный практикум', 'Физика']
-merged_df = df[df['subject'].isin(to_merge)].copy()
+def Merge(subject,*List):
+    merged_df = df[df['subject'].isin(List)].copy()
 
-if not merged_df.empty:
-    merged_row = merged_df[['5', '4', '3', '2']].sum()
-    total_marks_merged = merged_row.sum()
-    if total_marks_merged > 0:
-        merged_row['weighted_avg'] = (merged_row['5'] * 5 + merged_row['4'] * 4 + merged_row['3'] * 3 + merged_row['2'] * 2) / total_marks_merged
-    else:
-        merged_row['weighted_avg'] = np.nan
-    merged_row['avg'] = merged_df['avg'].mean()  # Среднее по оригинальным avg
-    merged_row['subject'] = 'Физика'
-    merged_row = pd.DataFrame([merged_row])[['subject', 'avg', '5', '4', '3', '2', 'weighted_avg']]
+    if not merged_df.empty:
+        merged_row = merged_df[['5', '4', '3', '2']].sum()
+        total_marks_merged = merged_row.sum()
+        if total_marks_merged > 0:
+            merged_row['weighted_avg'] = (merged_row['5'] * 5 + merged_row['4'] * 4 + merged_row['3'] * 3 + merged_row['2'] * 2) / total_marks_merged
+        else:
+            merged_row['weighted_avg'] = np.nan
+        merged_row['avg'] = merged_df['avg'].mean()  # Среднее по оригинальным avg
+        merged_row['subject'] = subject
+        merged_row = pd.DataFrame([merged_row])[['subject', 'avg', '5', '4', '3', '2', 'weighted_avg']]
 
-    # Удаляем оригинальные строки из df
-    df = df[~df['subject'].isin(to_merge)]
+        df = df[~df['subject'].isin(List)]
+        df = pd.concat([df, merged_row], ignore_index=True)
 
-    # Добавляем объединённую строку
-    df = pd.concat([df, merged_row], ignore_index=True)
-
-# === Объединение предметов в категорию 'Физика' перед выводом второго графика ===
-to_merge = ['Алгебра и начала математического анализа', 'Алгебра', 'Математика', 'Геометрия', 'Вероятность и статистика']
-merged_df = df[df['subject'].isin(to_merge)].copy()
-
-if not merged_df.empty:
-    merged_row = merged_df[['5', '4', '3', '2']].sum()
-    total_marks_merged = merged_row.sum()
-    if total_marks_merged > 0:
-        merged_row['weighted_avg'] = (merged_row['5'] * 5 + merged_row['4'] * 4 + merged_row['3'] * 3 + merged_row['2'] * 2) / total_marks_merged
-    else:
-        merged_row['weighted_avg'] = np.nan
-    merged_row['avg'] = merged_df['avg'].mean()  # Среднее по оригинальным avg
-    merged_row['subject'] = 'Математика'
-    merged_row = pd.DataFrame([merged_row])[['subject', 'avg', '5', '4', '3', '2', 'weighted_avg']]
-
-    # Удаляем оригинальные строки из df
-    df = df[~df['subject'].isin(to_merge)]
-
-    # Добавляем объединённую строку
-    df = pd.concat([df, merged_row], ignore_index=True)
-
+    
+Merge('Математика', 'Алгебра и начала математического анализа', 'Алгебра', 'Математика', 'Геометрия', 'Вероятность и статистика')
+Merge('Физика', 'Технологии современного производства', 'Инженерный практикум', 'Физика')
 
 
 
@@ -162,11 +137,10 @@ plt.pie(
 )
 
 plt.title("Распределение всех оценок", fontsize=14, fontweight="bold")
-plt.axis("equal")  # круг, а не овал
+plt.axis("equal")
 plt.tight_layout()
 plt.show()
 
-# --- Группированный бар-чарт с отступами между предметами ---
 subjects = df["subject"]
 
 # Для отступов между группами предметов
@@ -214,7 +188,6 @@ plt.ylabel("Количество оценок")
 plt.title("Количество оценок по предметам", fontsize=14, fontweight="bold")
 plt.legend(title="Оценки")
 
-# Добавляем чуть больше пространства справа/слева
 plt.xlim(min(x) - 1, max(x) + 1)
 
 plt.tight_layout()
@@ -238,11 +211,12 @@ df['weighted_avg'] = (df['5'] * 5 + df['4'] * 4 + df['3'] * 3 + df['2'] * 2) / d
 df['good_percent'] = ((df['5'] + df['4']) / df['total_marks'].replace(0, np.nan)) * 100
 
 # Общее распределение (таблица 1)
-total_5 = df['5'].sum()
-total_4 = df['4'].sum()
-total_3 = df['3'].sum()
-total_2 = df['2'].sum()
+total_5 = total_counts[0]
+total_4 = total_counts[1]
+total_3 = total_counts[2]
+total_2 = total_counts[3]
 total_all = total_5 + total_4 + total_3 + total_2
+
 if total_all > 0:
 
     dist_df = pd.DataFrame({
