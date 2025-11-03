@@ -85,6 +85,7 @@ df = df.groupby('subject').agg({
 df = df[~df['subject'].isin(['Индивидуальный проект', 'Иностранный язык'])]
 
 def Merge(subject,*List):
+    global df
     merged_df = df[df['subject'].isin(List)].copy()
 
     if not merged_df.empty:
@@ -211,10 +212,10 @@ df['weighted_avg'] = (df['5'] * 5 + df['4'] * 4 + df['3'] * 3 + df['2'] * 2) / d
 df['good_percent'] = ((df['5'] + df['4']) / df['total_marks'].replace(0, np.nan)) * 100
 
 # Общее распределение (таблица 1)
-total_5 = total_counts[0]
-total_4 = total_counts[1]
-total_3 = total_counts[2]
-total_2 = total_counts[3]
+total_5 = total_counts["5"]
+total_4 = total_counts["4"]
+total_3 = total_counts["3"]
+total_2 = total_counts["2"]
 total_all = total_5 + total_4 + total_3 + total_2
 
 if total_all > 0:
