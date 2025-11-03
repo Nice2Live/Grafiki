@@ -272,8 +272,6 @@ category_df['good_percent'] = (
 )
 
 if not category_df.empty:
-    import matplotlib.pyplot as plt
-    import numpy as np
 
     categories = category_df['category']
     x = np.arange(len(categories))
